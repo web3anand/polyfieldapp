@@ -18,11 +18,6 @@ function LoadingScreenWithAuth() {
     if (typeof window !== 'undefined' && import.meta.env.DEV) {
       const showLoginValue = authenticated !== true;
       console.log('[LoadingScreen] ready:', ready, 'authenticated:', authenticated, 'showLogin:', showLoginValue, 'type:', typeof authenticated);
-      if (!showLoginValue) {
-        console.warn('[LoadingScreen] ⚠️ Login UI NOT showing! authenticated is:', authenticated, 'type:', typeof authenticated);
-      } else {
-        console.log('[LoadingScreen] ✅ Login UI WILL show. authenticated !== true is true');
-      }
     }
   }, [ready, authenticated]);
 
@@ -39,28 +34,11 @@ function LoadingScreenWithAuth() {
     }
   };
 
-  // CRITICAL: Always show login UI when not authenticated
-  // This ensures the login screen stays visible until user successfully logs in
-  // Only show "Loading markets..." if authenticated (which means we're loading the app)
-  // Use explicit boolean check - show login if authenticated is NOT explicitly true
-  // Default to showing login if authenticated is undefined (initial state)
+  // CRITICAL: Show login UI when not authenticated
   const showLogin = authenticated !== true;
   
-  // Debug: Log the actual values to help diagnose
-  useEffect(() => {
-    if (typeof window !== 'undefined' && import.meta.env.DEV) {
-      console.log('[LoadingScreen] showLogin calculation:', {
-        authenticated,
-        'authenticated !== true': authenticated !== true,
-        'typeof authenticated': typeof authenticated,
-        showLogin,
-        ready
-      });
-    }
-  }, [authenticated, showLogin, ready]);
-  
   return (
-    <div className="h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 relative">
+    <div className="h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-between p-6 relative overflow-hidden">
       {/* Animated Background Particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating Hexagons */}
@@ -125,8 +103,11 @@ function LoadingScreenWithAuth() {
       {/* Scanlines Effect */}
       <div className="scanlines pointer-events-none" />
 
-      {/* Main Content - Centered */}
-      <div className="relative z-10 flex flex-col items-center max-w-md w-full">
+      {/* Top spacer - pushes content to center */}
+      <div className="flex-shrink-0 h-20" />
+
+      {/* Main Content - Always visible in same order */}
+      <div className="relative z-10 flex flex-col items-center w-full max-w-md flex-1 justify-center">
         {/* Logo Container */}
         <motion.div
           initial={{ scale: 0, rotate: -180, opacity: 0 }}
@@ -145,7 +126,7 @@ function LoadingScreenWithAuth() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 0.8 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
           className="mt-6 text-center"
         >
           <h1 className="text-4xl font-[Orbitron] text-[var(--text-primary)] tracking-wide mb-2">
@@ -154,7 +135,7 @@ function LoadingScreenWithAuth() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.3, duration: 0.6 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
             className="text-[var(--text-muted)] text-sm"
           >
             Predict. Play. Profit.
@@ -165,7 +146,7 @@ function LoadingScreenWithAuth() {
         <motion.div
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: "280px" }}
-          transition={{ delay: 1.5, duration: 0.5 }}
+          transition={{ delay: 1, duration: 0.4 }}
           className="mt-6 h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden relative"
         >
           <motion.div
@@ -179,71 +160,74 @@ function LoadingScreenWithAuth() {
             className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"
           />
         </motion.div>
+      </div>
 
-        {/* Login Button - Shows when ready and not authenticated */}
+      {/* Bottom Section - Button or Loading State */}
+      <div className="relative z-20 w-full max-w-md flex-shrink-0 pb-8">
+        {/* Show login button when ready and not authenticated */}
         {showLogin && ready && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2, duration: 0.5 }}
-            className="mt-8 w-full flex flex-col items-center gap-3"
+            transition={{ delay: 1.3, duration: 0.5 }}
+            className="flex flex-col items-center gap-4"
           >
             <motion.button
               onClick={handleLogin}
               disabled={isLoading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full max-w-[280px] flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full text-white font-[Days_One] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full max-w-[320px] flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full text-white text-lg font-[Days_One] transition-all shadow-2xl hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full"
+                  className="w-6 h-6 border-3 border-white/20 border-t-white rounded-full"
                 />
               ) : (
                 <>
                   <span>Enter Prediction</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-6 h-6" />
                 </>
               )}
             </motion.button>
 
-            <p className="text-white/50 text-xs text-center px-6">
+            <p className="text-white/50 text-xs text-center px-8">
               By connecting, you agree to our Terms of Service
             </p>
           </motion.div>
         )}
 
-        {/* Loading spinner while Privy initializes */}
+        {/* Show loading spinner while Privy initializes */}
         {showLogin && !ready && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.8, duration: 0.5 }}
-            className="mt-8 flex flex-col items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.3, duration: 0.5 }}
+            className="flex flex-col items-center justify-center py-4"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-4"
+              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-3"
             />
             <p className="text-white/70 text-sm">Initializing...</p>
           </motion.div>
         )}
 
-        {/* Loading markets message - Shows when authenticated */}
+        {/* Show loading markets when authenticated */}
         {!showLogin && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="mt-8 flex flex-col items-center"
+            className="flex flex-col items-center justify-center py-4"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-4"
+              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-3"
             />
             <p className="text-[var(--text-primary)] text-sm">Loading markets...</p>
           </motion.div>
