@@ -60,7 +60,7 @@ function LoadingScreenWithAuth() {
   }, [authenticated, showLogin, ready]);
   
   return (
-    <div className="h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-between pt-6 pb-4 relative">
+    <div className="h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 relative">
       {/* Animated Background Particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating Hexagons */}
@@ -125,8 +125,8 @@ function LoadingScreenWithAuth() {
       {/* Scanlines Effect */}
       <div className="scanlines pointer-events-none" />
 
-      {/* Top Content Container */}
-      <div className="flex flex-col items-center pt-6">
+      {/* Main Content - Centered */}
+      <div className="relative z-10 flex flex-col items-center max-w-md w-full">
         {/* Logo Container */}
         <motion.div
           initial={{ scale: 0, rotate: -180, opacity: 0 }}
@@ -137,7 +137,6 @@ function LoadingScreenWithAuth() {
             type: "spring",
             stiffness: 100
           }}
-          className="relative z-10"
         >
           <PolyFieldLogo size={120} />
         </motion.div>
@@ -147,9 +146,9 @@ function LoadingScreenWithAuth() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1, duration: 0.8 }}
-          className="mt-3 text-center"
+          className="mt-6 text-center"
         >
-          <h1 className="text-4xl font-[Orbitron] text-[var(--text-primary)] tracking-wide mb-1">
+          <h1 className="text-4xl font-[Orbitron] text-[var(--text-primary)] tracking-wide mb-2">
             PolyField
           </h1>
           <motion.p
@@ -167,7 +166,7 @@ function LoadingScreenWithAuth() {
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: "280px" }}
           transition={{ delay: 1.5, duration: 0.5 }}
-          className="mt-4 h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden relative"
+          className="mt-6 h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden relative"
         >
           <motion.div
             initial={{ x: "-100%" }}
@@ -180,75 +179,76 @@ function LoadingScreenWithAuth() {
             className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"
           />
         </motion.div>
-      </div>
 
-      {/* Loading Text or Login UI */}
-      {/* Always show login UI container - will show login buttons when ready, or spinner when not ready */}
-      {/* CRITICAL: Always render the container, then conditionally show login or loading */}
-      {(!showLogin || !ready) && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: ready ? 0.3 : 1.5, duration: 0.5 }}
-          className="mt-6 w-full max-w-sm px-4 relative z-20"
-        >
-        {/* Show login UI if not authenticated (this includes undefined, false, null) */}
-        {showLogin ? (
-          <>
-            {/* Show loading spinner while Privy initializes */}
-            {!ready && (
-              <div className="flex flex-col items-center justify-center py-8">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-4"
-                />
-                <p className="text-white/70 text-sm">Initializing authentication...</p>
-              </div>
-            )}
-          </>
-        ) : (
-          // User is authenticated - show loading message
-          <div className="glass-card rounded-2xl p-6 border border-white/10 bg-[var(--bg-secondary)]/90 backdrop-blur-md text-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"
-            />
-            <p className="text-[var(--text-primary)] text-sm">Loading markets...</p>
-          </div>
-        )}
-      </motion.div>
-      )}
-
-      {/* New Login Button - Positioned at Bottom */}
-      {showLogin && ready && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          className="w-full flex justify-center z-30 px-4 mb-12"
-        >
-          <div className="w-full max-w-sm flex flex-col items-center gap-2.5">
+        {/* Login Button - Shows when ready and not authenticated */}
+        {showLogin && ready && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2, duration: 0.5 }}
+            className="mt-8 w-full flex flex-col items-center gap-3"
+          >
             <motion.button
               onClick={handleLogin}
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-auto min-w-[200px] flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-[Days_One] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ borderRadius: '30px' }}
+              className="w-full max-w-[280px] flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-full text-white font-[Days_One] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>Enter prediction</span>
-              <ArrowRight className="w-5 h-5" />
+              {isLoading ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full"
+                />
+              ) : (
+                <>
+                  <span>Enter Prediction</span>
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </motion.button>
 
-            {/* Info Text */}
-            <p className="text-white/50 text-xs text-center mt-4">
+            <p className="text-white/50 text-xs text-center px-6">
               By connecting, you agree to our Terms of Service
             </p>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+
+        {/* Loading spinner while Privy initializes */}
+        {showLogin && !ready && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.8, duration: 0.5 }}
+            className="mt-8 flex flex-col items-center justify-center"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-4"
+            />
+            <p className="text-white/70 text-sm">Initializing...</p>
+          </motion.div>
+        )}
+
+        {/* Loading markets message - Shows when authenticated */}
+        {!showLogin && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="mt-8 flex flex-col items-center"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full mb-4"
+            />
+            <p className="text-[var(--text-primary)] text-sm">Loading markets...</p>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
