@@ -8,12 +8,13 @@ import { LoginScreen } from './components/LoginScreen';
 import { ThemeProvider } from './components/ThemeContext';
 import { Toaster } from './components/ui/sonner';
 import { AnimatedBackground } from './components/AnimatedBackground';
+import { getPrivyConfig } from './lib/privy-config';
 
 type Tab = 'markets' | 'portfolio' | 'profile';
 
-// Check if Privy is configured
-const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
-const isPrivyConfigured = privyAppId && privyAppId.length > 0;
+// Check if Privy is configured (uses fallback App ID if env var not set)
+const privyConfig = getPrivyConfig();
+const isPrivyConfigured = privyConfig.appId && privyConfig.appId.length > 0;
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('markets');
@@ -44,10 +45,6 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, []);
-
-  // Check if Privy is configured
-  const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
-  const isPrivyConfigured = privyAppId && privyAppId.length > 0;
 
   // Show login screen if Privy is configured and user is not authenticated
   if (isPrivyConfigured && (!ready || !authenticated)) {
