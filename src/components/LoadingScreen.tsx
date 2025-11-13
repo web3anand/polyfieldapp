@@ -368,14 +368,7 @@ function LoadingScreenWithoutAuth() {
 
 // Export component - will use auth version if PrivyProvider is mounted
 export function LoadingScreen() {
-  // Check if Privy is configured via environment variable
-  const isPrivyConfigured = typeof window !== 'undefined' && 
-    (import.meta.env.VITE_PRIVY_APP_ID || '').length > 0;
-  
-  // If Privy is configured, assume PrivyProvider is mounted (it should be from main.tsx)
-  // Otherwise use the fallback
-  if (isPrivyConfigured) {
-    return <LoadingScreenWithAuth />;
-  }
-  return <LoadingScreenWithoutAuth />;
+  // Always use the auth version since we have a fallback Privy App ID
+  // The PrivyProvider is always mounted in main.tsx with the fallback
+  return <LoadingScreenWithAuth />;
 }
