@@ -19,21 +19,24 @@ export interface PrivyConfig {
 
 /**
  * Get Privy Configuration
- * Loads from environment variables
+ * Loads from environment variables with fallback
  */
 export function getPrivyConfig(): PrivyConfig {
-  // Use environment variable or fallback to provided App ID
-  // App ID: cmhxczt420087lb0d07g6zoxs
-  const appId = import.meta.env.VITE_PRIVY_APP_ID || 'cmhxczt420087lb0d07g6zoxs';
+  // Use environment variable or fallback to default App ID
+  // Fallback App ID: cmhxczt420087lb0d07g6zoxs
+  const envAppId = import.meta.env.VITE_PRIVY_APP_ID;
+  const fallbackAppId = 'cmhxczt420087lb0d07g6zoxs';
+  const appId = envAppId || fallbackAppId;
 
-  if (!appId) {
-    console.warn('VITE_PRIVY_APP_ID not set. Authentication will not work.');
+  // Log configuration status
+  if (envAppId) {
+    console.log('✅ Privy: Using environment variable VITE_PRIVY_APP_ID:', envAppId);
   } else {
-    console.log('✅ Privy App ID configured:', appId);
+    console.log('ℹ️ Privy: Using fallback App ID (VITE_PRIVY_APP_ID not set):', fallbackAppId);
   }
 
   return {
-    appId: appId || '',
+    appId: appId,
     config: {
       // Login methods as per Privy docs: https://docs.privy.io/basics/react/quickstart
       loginMethods: ['wallet', 'email', 'sms'],
