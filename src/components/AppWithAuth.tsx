@@ -107,11 +107,24 @@ function AppWithPrivy({ activeTab, setActiveTab, isLoading, setIsLoading }: { ac
 
 function AppContent({ activeTab, setActiveTab, isLoading, setIsLoading }: { activeTab: Tab; setActiveTab: (tab: Tab) => void; isLoading: boolean; setIsLoading: (loading: boolean) => void }) {
   // AppContent should only render when user is authenticated
-  // No loading state needed here - authentication is already verified in AppWithPrivy
+  // Debug logging
+  useEffect(() => {
+    if (typeof window !== 'undefined' && import.meta.env.DEV) {
+      console.log('[AppContent] Rendering, activeTab:', activeTab);
+    }
+  }, [activeTab]);
+
   return (
     <ThemeProvider>
-      <div className="h-screen bg-[var(--bg-primary)] flex flex-col transition-colors duration-300 relative overflow-hidden">
+      <div className="h-screen w-screen bg-[var(--bg-primary)] flex flex-col transition-colors duration-300 relative overflow-hidden">
         <AnimatedBackground />
+        
+        {/* Top bar for debugging */}
+        {import.meta.env.DEV && (
+          <div className="fixed top-2 right-2 bg-black/80 text-white text-xs p-2 rounded z-50 font-mono">
+            <div>Tab: {activeTab}</div>
+          </div>
+        )}
         
         <main className="flex-1 overflow-hidden relative z-10">
           <div className="h-full max-w-7xl mx-auto">
