@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Search, Filter, TrendingUp, Globe, Zap, Trophy, Coins, Briefcase, TrendingDown, Flame, Award, Target, Circle, Disc, Loader2 } from 'lucide-react';
 import { MarketCard } from './MarketCard';
 import { BetSheet } from './BetSheet';
@@ -80,6 +80,13 @@ export function MarketsPage() {
     setSelectedMarket(market);
   }, []);
 
+  // Debug logging
+  useEffect(() => {
+    if (typeof window !== 'undefined' && import.meta.env.DEV) {
+      console.log('[MarketsPage] loading:', loading, 'markets:', markets.length, 'error:', marketsError);
+    }
+  }, [loading, markets.length, marketsError]);
+
   return (
     <div className="flex flex-col h-screen">
       {/* Loading State - Full Screen Centered */}
@@ -88,6 +95,9 @@ export function MarketsPage() {
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
             <p className="text-[var(--text-secondary)] text-sm">Loading markets...</p>
+            {import.meta.env.DEV && (
+              <p className="text-[var(--text-muted)] text-xs mt-2">Check console for details</p>
+            )}
           </div>
         </div>
       ) : (
@@ -95,7 +105,11 @@ export function MarketsPage() {
           {/* Error State */}
           {marketsError && (
             <div className="bg-rose-500/20 border border-rose-500/50 rounded-xl p-4 m-4">
-              <p className="text-rose-600 text-sm">{marketsError}</p>
+              <p className="text-rose-600 text-sm font-semibold mb-1">Failed to load markets</p>
+              <p className="text-rose-600/80 text-xs">{marketsError}</p>
+              {import.meta.env.DEV && (
+                <p className="text-rose-600/60 text-xs mt-2">Check console and network tab</p>
+              )}
             </div>
           )}
 

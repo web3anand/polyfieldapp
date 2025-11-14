@@ -24,9 +24,13 @@ export async function getMarketsViaProxy(
   limit: number = 100,
   offset: number = 0
 ): Promise<Market[]> {
+  console.log('[getMarketsViaProxy] Starting fetch...', { limit, offset });
+  
   // Try Polymarket API directly first
   try {
     const polymarketUrl = `${POLYMARKET_GAMMA_API}/markets?limit=${limit}&offset=${offset}&active=true&closed=false`;
+    
+    console.log('[getMarketsViaProxy] Fetching from:', polymarketUrl);
     
     if (env.isDevelopment && !(window as any).__polymarket_direct_attempt) {
       console.info('🔄 Fetching markets via Vite proxy (bypasses CORS)...');
@@ -50,6 +54,12 @@ export async function getMarketsViaProxy(
     }
 
     const data = await response.json();
+    
+    console.log('[getMarketsViaProxy] Received data:', { 
+      isArray: Array.isArray(data), 
+      hasMarkets: !!data.markets,
+      dataLength: Array.isArray(data) ? data.length : (data.markets?.length || 0)
+    });
     
     // Transform Polymarket API response to our Market format
     // Handle both array response and object with markets property

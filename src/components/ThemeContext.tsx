@@ -10,18 +10,27 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light');
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Initialize theme immediately to avoid flash
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme') as Theme;
+      return saved || 'dark'; // Default to dark theme
     }
-  }, []);
+    return 'dark';
+  });
 
   useEffect(() => {
-    localStorage.setItem('theme', theme);
+    // Set theme on document immediately
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    
+    // Also set body background for immediate effect
+    document.body.style.backgroundColor = theme === 'dark' ? '#0a0a0a' : '#ffffff';
+    document.body.style.color = theme === 'dark' ? '#ffffff' : '#0f172a';
+    
+    if (import.meta.env.DEV) {
+      console.log('[ThemeProvider] Theme set to:', theme);
+    }
   }, [theme]);
 
   const toggleTheme = () => {
