@@ -32,44 +32,41 @@ export interface OrderResponse {
  * @returns Order book with bids and asks
  */
 export async function getOrderBook(tokenId: string): Promise<OrderBook | null> {
-  try {
-    const response = await fetch(`${CLOB_API_BASE}/book?token_id=${tokenId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch order book: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    
-    // Transform CLOB API response to our format
-    return {
-      bids: data.bids || [],
-      asks: data.asks || [],
-    };
-  } catch (error: any) {
-    if (error.message?.includes('Failed to fetch') || 
-        error.message?.includes('CORS') ||
-        error.message?.includes('NetworkError')) {
-      // CORS blocked - would need backend proxy
-      // Only log once to avoid console spam
-      if (!(window as any).__clob_cors_warning_shown) {
-        console.warn('CLOB API blocked by CORS. Trading requires backend proxy.');
-        (window as any).__clob_cors_warning_shown = true;
-      }
-      return null;
-    }
-    // Only log other errors once
-    if (!(window as any).__clob_error_shown) {
-      console.error('Error fetching order book:', error);
-      (window as any).__clob_error_shown = true;
-    }
-    return null;
-  }
+  // CLOB API requires backend proxy due to CORS
+  // Skip direct API calls to prevent console errors
+  const { env } = await import('../config/env');
+  
+  // Always return null for now - CLOB API requires backend proxy
+  // This prevents CORS errors and 404s in console
+  // When backend is ready, uncomment the code below and use backend proxy endpoint
+  
+  // if (!env.apiBaseUrl || env.apiBaseUrl.trim() === '') {
+  //   return null;
+  // }
+  
+  // try {
+  //   const response = await fetch(`${env.apiBaseUrl}/api/clob/book?token_id=${tokenId}`, {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   });
+  //
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch order book: ${response.status} ${response.statusText}`);
+  //   }
+  //
+  //   const data = await response.json();
+  //   return {
+  //     bids: data.bids || [],
+  //     asks: data.asks || [],
+  //   };
+  // } catch (error: any) {
+  //   console.error('Error fetching order book:', error);
+  //   return null;
+  // }
+  
+  return null;
 }
 
 /**

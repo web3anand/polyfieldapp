@@ -2,7 +2,6 @@ import { createRoot } from "react-dom/client";
 import { PrivyProvider } from "@privy-io/react-auth";
 import AppWithAuth from "./components/AppWithAuth.tsx";
 import "./index.css";
-import "./styles/globals.css";
 import { getPrivyConfig } from "./lib/privy-config";
 
 // Get Privy configuration (includes fallback App ID)

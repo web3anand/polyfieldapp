@@ -134,20 +134,28 @@ export async function getActiveMarkets(
  * @returns Order book data
  */
 export async function getOrderBook(tokenId: string) {
-  try {
-    const response = await fetch(
-      `${POLYMARKET_CLOB_API}/book?token_id=${tokenId}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch order book: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching order book:', error);
-    throw error;
-  }
+  // CLOB API requires backend proxy due to CORS
+  // Return null to prevent console errors
+  // This function should be called through backend proxy when available
+  return null;
+  
+  // Uncomment when backend proxy is ready:
+  // try {
+  //   const { env } = await import('../config/env');
+  //   const backendUrl = env.apiBaseUrl || 'http://localhost:8000';
+  //   const response = await fetch(
+  //     `${backendUrl}/api/clob/book?token_id=${tokenId}`
+  //   );
+  //
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch order book: ${response.statusText}`);
+  //   }
+  //
+  //   return await response.json();
+  // } catch (error) {
+  //   console.error('Error fetching order book:', error);
+  //   return null;
+  // }
 }
 
 /**
