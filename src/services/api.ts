@@ -50,6 +50,19 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // Skip API calls if no backend is configured (empty baseURL)
+    // This prevents 404s in production when backend doesn't exist
+    if (!this.baseURL || this.baseURL.trim() === '') {
+      if (env.isDevelopment) {
+        console.info(`Skipping API call to ${endpoint} - no backend configured (VITE_API_BASE_URL not set)`);
+      }
+      return {
+        data: [] as T,
+        status: 0,
+        error: 'Backend not configured',
+      };
+    }
+
     const url = `${this.baseURL}${endpoint}`;
     
     const config: RequestInit = {

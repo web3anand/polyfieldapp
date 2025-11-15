@@ -175,7 +175,15 @@ export async function getMarketsViaProxy(
     }
   }
 
-  // Fallback: Try backend proxy
+  // Fallback: Try backend proxy (only if backend is configured)
+  if (!BACKEND_API_BASE || BACKEND_API_BASE.trim() === '') {
+    // No backend configured - return empty array to prevent 404s
+    if (env.isDevelopment) {
+      console.info('Skipping backend proxy call - no backend configured (VITE_API_BASE_URL not set)');
+    }
+    return [];
+  }
+
   try {
     const response = await fetch(
       `${BACKEND_API_BASE}/api/markets?limit=${limit}&offset=${offset}`,
