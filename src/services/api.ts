@@ -64,6 +64,19 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
       
+      // Handle 404s before trying to parse response
+      if (response.status === 404) {
+        if (env.isDevelopment) {
+          console.warn(`Backend endpoint ${endpoint} not found (404). Returning empty data.`);
+        }
+        // Return empty data instead of throwing error
+        return {
+          data: [] as T,
+          status: 404,
+          error: 'Endpoint not found',
+        };
+      }
+
       // Handle non-JSON responses
       let data;
       const contentType = response.headers.get('content-type');
