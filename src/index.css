@@ -22,6 +22,11 @@
     font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
   
+  /* Ensure buttons can have custom styles */
+  button {
+    border-radius: inherit;
+  }
+  
   h1 {
     font-family: Inter, sans-serif;
     font-size: 2rem;
@@ -68,11 +73,12 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #000;
-    background: linear-gradient(180deg, #e8e8e8 0%, #c0c0c0 100%);
-    border: 2px solid #808080;
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+    color: #000 !important;
+    background: linear-gradient(180deg, #e8e8e8 0%, #c0c0c0 100%) !important;
+    border: 2px solid #808080 !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
     transition: all 0.15s ease;
+    border-radius: 8px;
   }
   
   .btn-gamified:before {
@@ -111,11 +117,12 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #000;
-    background: linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%);
-    border: none;
-    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.3);
+    color: #000 !important;
+    background: linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%) !important;
+    border: none !important;
+    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.3) !important;
     transition: all 0.1s ease;
+    border-radius: 0;
   }
   
   .btn-pixel:before {
@@ -146,43 +153,43 @@
   }
   
   .btn-pixel-yes {
-    color: #fff;
-    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
-    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2);
+    color: #fff !important;
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2) !important;
   }
   
   .btn-pixel-yes:hover {
-    background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+    background: linear-gradient(180deg, #34d399 0%, #10b981 100%) !important;
   }
   
   .btn-pixel-no {
-    color: #fff;
-    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2);
+    color: #fff !important;
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%) !important;
+    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2) !important;
   }
   
   .btn-pixel-no:hover {
-    background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+    background: linear-gradient(180deg, #f87171 0%, #ef4444 100%) !important;
   }
   
   .btn-pixel-buy {
-    color: #fff;
-    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2);
+    color: #fff !important;
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
+    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2) !important;
   }
   
   .btn-pixel-buy:hover {
-    background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+    background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%) !important;
   }
   
   .btn-pixel-sell {
-    color: #fff;
-    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
-    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2);
+    color: #fff !important;
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
+    box-shadow: inset -3px -3px rgba(0, 0, 0, 0.4), inset 3px 3px rgba(255, 255, 255, 0.2) !important;
   }
   
   .btn-pixel-sell:hover {
-    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%) !important;
   }
   
   .btn-retro {
@@ -192,8 +199,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-radius: 12px;
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 4px rgba(0, 0, 0, 0.2), 0 6px 10px rgba(0, 0, 0, 0.15);
+    border-radius: 12px !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.3), 0 4px rgba(0, 0, 0, 0.2), 0 6px 10px rgba(0, 0, 0, 0.15) !important;
     transition: all 0.15s ease;
   }
   
@@ -217,23 +224,23 @@
   }
   
   .btn-retro-yes {
-    color: #fff;
+    color: #fff !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(180deg, #06d6a0 0%, #06b08a 100%);
+    background: linear-gradient(180deg, #06d6a0 0%, #06b08a 100%) !important;
   }
   
   .btn-retro-yes:hover {
-    background: linear-gradient(180deg, #0ae8b3 0%, #06d6a0 100%);
+    background: linear-gradient(180deg, #0ae8b3 0%, #06d6a0 100%) !important;
   }
   
   .btn-retro-no {
-    color: #fff;
+    color: #fff !important;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    background: linear-gradient(180deg, #ff8369 0%, #ff6b51 100%);
+    background: linear-gradient(180deg, #ff8369 0%, #ff6b51 100%) !important;
   }
   
   .btn-retro-no:hover {
-    background: linear-gradient(180deg, #ff9580 0%, #ff8369 100%);
+    background: linear-gradient(180deg, #ff9580 0%, #ff8369 100%) !important;
   }
 }
 
