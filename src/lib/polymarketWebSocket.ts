@@ -69,6 +69,14 @@ class PolymarketWebSocket {
       return;
     }
 
+    // Skip WebSocket connection if no backend is configured
+    // WebSocket requires backend proxy for authentication
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    if (!apiBaseUrl || apiBaseUrl.trim() === '') {
+      // Silently skip - WebSocket requires backend proxy
+      return;
+    }
+
     this.isConnecting = true;
 
     try {
