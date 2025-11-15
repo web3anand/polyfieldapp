@@ -13,31 +13,30 @@ import { ThemeProvider } from './ThemeContext';
 import { Toaster } from './ui/sonner';
 import { AnimatedBackground } from './AnimatedBackground';
 import { usePrivy } from '@privy-io/react-auth';
+import { getPrivyConfig } from '../lib/privy-config';
 
 type Tab = 'markets' | 'portfolio' | 'profile';
 
-// Check if Privy is configured
-const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
-const isPrivyConfigured = privyAppId && privyAppId.length > 0;
+// Check if Privy is configured (uses fallback App ID if env var not set)
+const privyConfig = getPrivyConfig();
+const isPrivyConfigured = privyConfig.appId && privyConfig.appId.length > 0;
 
 export default function AppWithAuth() {
   const [activeTab, setActiveTab] = useState<Tab>('markets');
   // Start with loading true - will be set to false when we know auth state
   const [isLoading, setIsLoading] = useState(true);
   
-  // CRITICAL: If Privy is not configured, show a warning but still require authentication
-  // In production, you should always have Privy configured
+  // CRITICAL: Privy App ID check (will use fallback if env var not set)
+  // The fallback ensures the app works even without explicitly setting VITE_PRIVY_APP_ID
   if (!isPrivyConfigured) {
-    console.warn('⚠️ VITE_PRIVY_APP_ID not configured. Authentication is required for this app.');
-    // Still show login screen even without Privy configured
-    // This prevents unauthorized access
+    console.error('❌ Privy configuration error: No App ID available (neither env var nor fallback)');
     return (
       <ThemeProvider>
         <div className="h-screen bg-[var(--bg-primary)] flex items-center justify-center">
           <div className="text-center p-8 glass-card rounded-2xl max-w-md">
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Authentication Required</h2>
-            <p className="text-[var(--text-secondary)] mb-2">VITE_PRIVY_APP_ID is not configured.</p>
-            <p className="text-[var(--text-muted)] text-sm">Please configure Privy authentication to use this app.</p>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Configuration Error</h2>
+            <p className="text-[var(--text-secondary)] mb-2">Unable to initialize authentication.</p>
+            <p className="text-[var(--text-muted)] text-sm">Please contact support.</p>
           </div>
         </div>
         <Toaster theme="dark" />
