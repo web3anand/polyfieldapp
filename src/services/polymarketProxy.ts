@@ -10,10 +10,10 @@ import { env } from '../config/env';
 import type { Market } from '../types';
 
 // Polymarket API endpoints
-// Use Vite proxy in development to bypass CORS, direct API in production
+// Use Vite proxy in development, Vercel serverless function in production
 const POLYMARKET_GAMMA_API = env.isDevelopment 
   ? '/polymarket-api'  // Use Vite proxy in dev (bypasses CORS)
-  : 'https://gamma-api.polymarket.com';  // Direct API in production
+  : '/api/polymarket-proxy';  // Use Vercel serverless function in production
 const BACKEND_API_BASE = env.apiBaseUrl || '';
 
 /**
