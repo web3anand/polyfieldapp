@@ -26,11 +26,13 @@ export async function getMarketsViaProxy(
 ): Promise<Market[]> {
   // Try Polymarket API directly first
   try {
+    // Add cache-busting timestamp to ensure fresh data
+    const timestamp = Date.now();
     // In production, use Vercel serverless function which expects query params directly
     // In development, use Vite proxy which needs /markets path
     const polymarketUrl = env.isDevelopment
-      ? `${POLYMARKET_GAMMA_API}/markets?limit=${limit}&offset=${offset}&active=true&closed=false`
-      : `${POLYMARKET_GAMMA_API}?limit=${limit}&offset=${offset}&active=true&closed=false`;
+      ? `${POLYMARKET_GAMMA_API}/markets?limit=${limit}&offset=${offset}&active=true&closed=false&_t=${timestamp}`
+      : `${POLYMARKET_GAMMA_API}?limit=${limit}&offset=${offset}&active=true&closed=false&_t=${timestamp}`;
     
     if (env.isDevelopment && !(window as any).__polymarket_direct_attempt) {
       console.info('🔄 Fetching markets via Vite proxy (bypasses CORS)...');

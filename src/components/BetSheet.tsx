@@ -40,6 +40,9 @@ export function BetSheet({ market, onClose }: BetSheetProps) {
   
   // Check if Privy is configured
   const isPrivyConfigured = import.meta.env.VITE_PRIVY_APP_ID && import.meta.env.VITE_PRIVY_APP_ID.length > 0;
+  
+  // Mock balance - TODO: Fetch actual balance from wallet
+  const balance = 1000; // Default balance for demo purposes
 
   // Use real-time prices (from live scores hook for consistency)
   const price = betSide === 'yes' ? yesPercentage : noPercentage;

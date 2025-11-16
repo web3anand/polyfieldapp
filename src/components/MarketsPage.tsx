@@ -49,7 +49,7 @@ export function MarketsPage() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
 
   // Fetch markets from API
-  const { markets: apiMarkets, loading: marketsLoading, error: marketsError } = useMarkets();
+  const { markets: apiMarkets, loading: marketsLoading, error: marketsError, refetch: refetchMarkets } = useMarkets();
 
   const loading = marketsLoading;
 
@@ -120,7 +120,11 @@ export function MarketsPage() {
               className="w-full pl-9 pr-3 py-2 bg-[var(--hover-bg)] hover:bg-[var(--active-bg)] rounded-xl focus:outline-none transition-all text-sm text-[rgb(255,255,255)] placeholder:text-[var(--text-muted)]"
             />
           </div>
-          <button className="bg-[var(--hover-bg)] hover:bg-[var(--active-bg)] px-3 py-2 rounded-xl transition-all">
+          <button 
+            onClick={() => refetchMarkets()}
+            className="bg-[var(--hover-bg)] hover:bg-[var(--active-bg)] px-3 py-2 rounded-xl transition-all"
+            title="Refresh markets"
+          >
             <Filter className="w-4 h-4 text-[var(--text-secondary)]" />
           </button>
         </div>
