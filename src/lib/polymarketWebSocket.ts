@@ -69,21 +69,13 @@ class PolymarketWebSocket {
       return;
     }
 
-    // Skip WebSocket connection if no backend is configured
-    // WebSocket requires backend proxy for authentication
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-    if (!apiBaseUrl || apiBaseUrl.trim() === '') {
-      // Silently skip - WebSocket requires backend proxy
-      return;
-    }
-
     this.isConnecting = true;
 
     try {
       this.ws = new WebSocket(WS_BASE_URL);
 
       this.ws.onopen = () => {
-        console.log('Polymarket WebSocket connected');
+        console.log('✅ Polymarket WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
 
@@ -103,9 +95,9 @@ class PolymarketWebSocket {
       };
 
       this.ws.onerror = (error) => {
-        // Only log WebSocket errors once to avoid console spam
+        // Log WebSocket errors (but only once to avoid spam)
         if (!(window as any).__ws_error_shown) {
-          console.error('WebSocket connection failed. This is expected if backend proxy is not configured.');
+          console.warn('⚠️ WebSocket connection error. Will attempt to reconnect...');
           (window as any).__ws_error_shown = true;
         }
         this.isConnecting = false;
@@ -148,6 +140,9 @@ class PolymarketWebSocket {
 
   /**
    * Subscribe to a specific market
+   * Polymarket WebSocket expects subscriptions in format:
+   * - For order book: { type: 'subscribe', channel: 'orderbook', token_id: '...' }
+   * - For prices: { type: 'subscribe', channel: 'prices', token_id: '...' }
    */
   private subscribeToMarket(marketId: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -155,6 +150,26 @@ class PolymarketWebSocket {
     }
 
     try {
+      // Try multiple subscription formats for compatibility
+      // Format 1: Order book subscription (most common)
+      this.ws.send(
+        JSON.stringify({
+          type: 'subscribe',
+          channel: 'orderbook',
+          token_id: marketId,
+        })
+      );
+      
+      // Format 2: Price subscription
+      this.ws.send(
+        JSON.stringify({
+          type: 'subscribe',
+          channel: 'prices',
+          token_id: marketId,
+        })
+      );
+      
+      // Format 3: Market channel (fallback)
       this.ws.send(
         JSON.stringify({
           type: 'subscribe',
@@ -188,6 +203,10 @@ class PolymarketWebSocket {
 
   /**
    * Handle incoming WebSocket messages
+   * Polymarket WebSocket sends various message formats:
+   * - Order book updates: { type: 'orderbook', token_id, bids: [...], asks: [...] }
+   * - Price updates: { type: 'price', token_id, price, side }
+   * - Market updates: { type: 'market', ... }
    */
   private handleMessage(data: any): void {
     // Handle different message formats from Polymarket WebSocket
@@ -195,41 +214,72 @@ class PolymarketWebSocket {
     let yesPrice: number | undefined;
     let noPrice: number | undefined;
 
-    // Format 1: Direct price update
-    if (data.type === 'price_update' || data.type === 'market_update') {
-      marketId = data.marketId || data.conditionId || data.id;
-      yesPrice = data.yesPrice || data.bestBid || data.outcomes?.[0]?.price;
-      noPrice = data.noPrice || (data.bestAsk !== undefined ? 1 - data.bestAsk : undefined) || data.outcomes?.[1]?.price;
-    }
-    // Format 2: Order book update (extract prices from bids/asks)
-    else if (data.type === 'orderbook_update' || data.bids || data.asks) {
-      marketId = data.token_id || data.marketId || data.conditionId;
-      // Extract best bid/ask from order book
-      if (data.bids && data.bids.length > 0) {
-        yesPrice = data.bids[0].price;
+    // Extract token/market ID from various possible fields
+    marketId = data.token_id || data.tokenId || data.marketId || data.conditionId || data.id;
+
+    // Format 1: Order book update (most common format)
+    if (data.type === 'orderbook' || data.bids || data.asks) {
+      // Extract best bid (YES price) and best ask (NO price = 1 - ask)
+      if (data.bids && Array.isArray(data.bids) && data.bids.length > 0) {
+        // Best bid is the highest price someone is willing to pay for YES
+        const bestBid = data.bids[0];
+        yesPrice = typeof bestBid === 'number' ? bestBid : (bestBid.price || bestBid[0]);
       }
-      if (data.asks && data.asks.length > 0) {
-        noPrice = 1 - data.asks[0].price;
+      if (data.asks && Array.isArray(data.asks) && data.asks.length > 0) {
+        // Best ask is the lowest price someone is willing to sell for
+        // NO price = 1 - ask price
+        const bestAsk = data.asks[0];
+        const askPrice = typeof bestAsk === 'number' ? bestAsk : (bestAsk.price || bestAsk[0]);
+        noPrice = 1 - askPrice;
       }
     }
-    // Format 3: Market data object
-    else if (data.market || data.question) {
-      marketId = data.id || data.conditionId || data.market?.id;
-      yesPrice = data.bestBid || data.market?.bestBid;
-      noPrice = data.bestAsk !== undefined ? 1 - data.bestAsk : undefined || (data.market?.bestAsk !== undefined ? 1 - data.market.bestAsk : undefined);
+    // Format 2: Direct price update
+    else if (data.type === 'price' || data.type === 'price_update') {
+      if (data.side === 'YES' || data.side === 'yes') {
+        yesPrice = data.price;
+      } else if (data.side === 'NO' || data.side === 'no') {
+        noPrice = data.price;
+      } else {
+        // If no side specified, assume it's YES price
+        yesPrice = data.price;
+        noPrice = data.price !== undefined ? 1 - data.price : undefined;
+      }
+    }
+    // Format 3: Market update with bestBid/bestAsk
+    else if (data.type === 'market_update' || data.bestBid !== undefined || data.bestAsk !== undefined) {
+      yesPrice = data.bestBid;
+      if (data.bestAsk !== undefined) {
+        noPrice = 1 - data.bestAsk;
+      }
+    }
+    // Format 4: Outcomes array
+    else if (data.outcomes && Array.isArray(data.outcomes)) {
+      yesPrice = data.outcomes[0]?.price;
+      noPrice = data.outcomes[1]?.price;
     }
 
     // Notify subscribers if we have valid data
-    if (marketId && yesPrice !== undefined && noPrice !== undefined) {
+    // We can update even if only one price is available
+    if (marketId && (yesPrice !== undefined || noPrice !== undefined)) {
       const callbacks = this.subscribers.get(marketId);
       if (callbacks) {
-        callbacks.forEach((callback) => {
-          try {
-            callback(yesPrice!, noPrice!);
-          } catch (error) {
-            console.error('Error in price update callback:', error);
-          }
-        });
+        // If we only have one price, calculate the other (they should sum to 1)
+        if (yesPrice !== undefined && noPrice === undefined) {
+          noPrice = 1 - yesPrice;
+        } else if (noPrice !== undefined && yesPrice === undefined) {
+          yesPrice = 1 - noPrice;
+        }
+        
+        // Only notify if we have both prices
+        if (yesPrice !== undefined && noPrice !== undefined) {
+          callbacks.forEach((callback) => {
+            try {
+              callback(yesPrice!, noPrice!);
+            } catch (error) {
+              console.error('Error in price update callback:', error);
+            }
+          });
+        }
       }
     }
   }
