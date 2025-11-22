@@ -45,29 +45,37 @@ router.post('/submit', async (req: Request, res: Response) => {
 
     console.log('📝 Submitting pre-signed order with Builder attribution');
 
-    // Create HMAC signature for Builder API authentication
+    // Prepare payload with required fields per Polymarket CLOB docs
+    const payload = {
+      order: signedOrder,
+      owner: signedOrder.maker, // User's wallet address (not API key)
+      orderType: 'GTC', // Good-Til-Cancelled
+    };
+
+    // Create Builder API HMAC signature for attribution
     const timestamp = Date.now().toString();
     const method = 'POST';
     const path = '/order';
-    const body = JSON.stringify(signedOrder);
+    const body = JSON.stringify(payload);
     const message = timestamp + method + path + body;
     
     const crypto = await import('crypto');
-    const signature = crypto.createHmac('sha256', POLYMARKET_SECRET)
+    const builderSignature = crypto.createHmac('sha256', POLYMARKET_SECRET)
       .update(message)
       .digest('hex');
 
-    // Submit order to CLOB with both user signature + Builder attribution
+    // Submit order to CLOB with user's signature + Builder attribution headers
     const response = await axios.post(
       `${CLOB_API_BASE}/order`,
-      signedOrder,
+      payload,
       {
         headers: {
           'Content-Type': 'application/json',
+          // Builder attribution headers
           'POLY_BUILDER_API_KEY': POLYMARKET_API_KEY,
           'POLY_BUILDER_TIMESTAMP': timestamp,
           'POLY_BUILDER_PASSPHRASE': POLYMARKET_PASSPHRASE,
-          'POLY_BUILDER_SIGNATURE': signature,
+          'POLY_BUILDER_SIGNATURE': builderSignature,
         },
         timeout: 30000,
       }

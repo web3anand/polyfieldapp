@@ -188,6 +188,7 @@ export async function signOrderWithPrivy(
       ],
     };
 
+    // For EIP-712 signing, side must be 0 or 1
     const value = {
       ...order,
       side: order.side === 'BUY' ? 0 : 1,
@@ -201,8 +202,11 @@ export async function signOrderWithPrivy(
       primaryType: 'Order',
     });
 
+    // Return order with signature and correct format for API
     return {
       ...order,
+      side: order.side === 'BUY' ? 0 : 1, // API expects 0/1 not string
+      signatureType: 0,
       signature,
     };
   } catch (error) {
