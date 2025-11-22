@@ -116,6 +116,10 @@ router.post('/', async (req: Request, res: Response) => {
       {
         headers: {
           'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/json',
+          'Origin': 'https://polymarket.com',
+          'Referer': 'https://polymarket.com/',
           'POLY_BUILDER_API_KEY': POLYMARKET_API_KEY,
           'POLY_BUILDER_TIMESTAMP': timestamp,
           'POLY_BUILDER_PASSPHRASE': POLYMARKET_PASSPHRASE,
