@@ -1,17 +1,15 @@
 /**
  * Orders API Routes (Direct)
- * Complete order placement with server-side signing
+ * Order placement using Polymarket Builder API credentials
  */
 
 import express, { Request, Response } from 'express';
 import axios, { AxiosError } from 'axios';
-import { placeOrder } from '../services/polymarket.js';
 
 const router = express.Router();
 const CLOB_API_BASE = 'https://clob.polymarket.com';
 
-// Load environment variables
-const POLYMARKET_PRIVATE_KEY = process.env.POLYMARKET_PRIVATE_KEY || '';
+// Load Builder API credentials from environment
 const POLYMARKET_API_KEY = process.env.POLYMARKET_API_KEY || '';
 const POLYMARKET_SECRET = process.env.POLYMARKET_SECRET || '';
 const POLYMARKET_PASSPHRASE = process.env.POLYMARKET_PASSPHRASE || '';
@@ -68,40 +66,70 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    // Check if private key is configured
-    if (!POLYMARKET_PRIVATE_KEY) {
+    // Check if Builder API credentials are configured
+    if (!POLYMARKET_API_KEY || !POLYMARKET_SECRET || !POLYMARKET_PASSPHRASE) {
       return res.status(503).json({
         success: false,
         error: 'Server not configured for trading. Contact administrator.',
-        hint: 'POLYMARKET_PRIVATE_KEY environment variable not set',
+        hint: 'POLYMARKET_API_KEY, SECRET, and PASSPHRASE required',
       });
     }
 
     console.log('📝 Placing order:', { tokenId, side, size, price, userAddress });
 
-    // Place order using server-side signing
-    const result = await placeOrder(
+    // Create HMAC signature for Builder API auth
+    const timestamp = Date.now().toString();
+    const method = 'POST';
+    const path = '/orders';
+    
+    const orderPayload = {
+      salt: nonce.toString(),
+      maker: userAddress.toLowerCase(),
+      signer: userAddress.toLowerCase(),
+      taker: '0x0000000000000000000000000000000000000000',
+      tokenId,
+      makerAmount: side === 'BUY' 
+        ? Math.floor(parseFloat(size) * price * 1_000_000).toString()
+        : Math.floor(parseFloat(size) * 1_000_000).toString(),
+      takerAmount: side === 'BUY'
+        ? Math.floor(parseFloat(size) * 1_000_000).toString()
+        : Math.floor(parseFloat(size) * price * 1_000_000).toString(),
+      side: side === 'BUY' ? 0 : 1,
+      feeRateBps,
+      nonce,
+      expiration,
+    };
+
+    const body = JSON.stringify(orderPayload);
+    const message = timestamp + method + path + body;
+    
+    // Create HMAC signature
+    const crypto = await import('crypto');
+    const signature = crypto.createHmac('sha256', POLYMARKET_SECRET)
+      .update(message)
+      .digest('hex');
+
+    // Submit order to CLOB with Builder headers
+    const response = await axios.post(
+      `${CLOB_API_BASE}/orders`,
+      orderPayload,
       {
-        tokenId,
-        side,
-        size,
-        price,
-        userAddress,
-        feeRateBps,
-        nonce,
-        expiration,
-      },
-      POLYMARKET_PRIVATE_KEY,
-      POLYMARKET_API_KEY || undefined,
-      POLYMARKET_SECRET || undefined,
-      POLYMARKET_PASSPHRASE || undefined
+        headers: {
+          'Content-Type': 'application/json',
+          'POLY_BUILDER_API_KEY': POLYMARKET_API_KEY,
+          'POLY_BUILDER_TIMESTAMP': timestamp,
+          'POLY_BUILDER_PASSPHRASE': POLYMARKET_PASSPHRASE,
+          'POLY_BUILDER_SIGNATURE': signature,
+        },
+        timeout: 30000,
+      }
     );
 
     return res.status(200).json({
       success: true,
-      orderId: result.orderId,
+      orderId: response.data.orderID || response.data.id,
       message: 'Order placed successfully',
-      txHash: result.data?.transactionHash,
+      data: response.data,
     });
 
   } catch (error: any) {
