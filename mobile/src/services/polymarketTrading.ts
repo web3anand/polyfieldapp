@@ -154,16 +154,61 @@ export function createOrder(params: OrderParams): any {
 }
 
 /**
- * Sign an order (handled by backend server)
- * @param order - Order object to sign
- * @param privateKey - Not used, signing done server-side
+ * Sign an order using Privy wallet (EIP-712)
+ * @param order - Order object to sign  
+ * @param signTypedData - Privy's signTypedData function
  * @returns Signed order
- * 
- * NOTE: Order signing is now handled by the backend server for security.
- * This function is kept for backward compatibility but is not used.
  */
-export async function signOrder(order: any, privateKey: string): Promise<SignedOrder> {
-  throw new Error('Order signing should be done on the backend server. Use the /api/orders endpoint instead.');
+export async function signOrderWithPrivy(
+  order: any,
+  signTypedData: (data: any) => Promise<string>
+): Promise<SignedOrder> {
+  try {
+    const domain = {
+      name: 'Polymarket CTF Exchange',
+      version: '1',
+      chainId: 137, // Polygon
+      verifyingContract: '0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E', // CTF Exchange
+    };
+
+    const types = {
+      Order: [
+        { name: 'salt', type: 'uint256' },
+        { name: 'maker', type: 'address' },
+        { name: 'signer', type: 'address' },
+        { name: 'taker', type: 'address' },
+        { name: 'tokenId', type: 'uint256' },
+        { name: 'makerAmount', type: 'uint256' },
+        { name: 'takerAmount', type: 'uint256' },
+        { name: 'expiration', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'feeRateBps', type: 'uint256' },
+        { name: 'side', type: 'uint8' },
+        { name: 'signatureType', type: 'uint8' },
+      ],
+    };
+
+    const value = {
+      ...order,
+      side: order.side === 'BUY' ? 0 : 1,
+      signatureType: 0, // EOA signature
+    };
+
+    const signature = await signTypedData({
+      domain,
+      types,
+      value,
+      primaryType: 'Order',
+    });
+
+    return {
+      ...order,
+      signature,
+    };
+  } catch (error) {
+    console.error('Error signing order:', error);
+    throw error;
+  }
 }
 
 /**
@@ -206,14 +251,16 @@ export async function submitOrder(signedOrder: SignedOrder): Promise<OrderRespon
 }
 
 /**
- * Complete order flow: create, sign, and submit
+ * Complete order flow: create, sign with Privy, and submit via backend
  * @param params - Order parameters
- * @param privateKey - Private key for signing
+ * @param signTypedData - Privy's signTypedData function
+ * @param apiBaseUrl - Backend API URL for Builder attribution
  * @returns Order response
  */
 export async function placeOrder(
   params: OrderParams,
-  privateKey: string
+  signTypedData: (data: any) => Promise<string>,
+  apiBaseUrl: string
 ): Promise<OrderResponse> {
   try {
     console.log('🎯 Creating order:', params);
@@ -222,15 +269,34 @@ export async function placeOrder(
     const order = createOrder(params);
     console.log('📝 Order created:', order);
 
-    // Step 2: Sign the order
-    const signedOrder = await signOrder(order, privateKey);
-    console.log('✍️ Order signed');
+    // Step 2: Sign the order with Privy wallet
+    const signedOrder = await signOrderWithPrivy(order, signTypedData);
+    console.log('✍️ Order signed with Privy');
 
-    // Step 3: Submit to CLOB
-    const response = await submitOrder(signedOrder);
-    console.log('✅ Order submitted:', response);
+    // Step 3: Submit to backend (adds Builder headers) then CLOB
+    const response = await fetch(`${apiBaseUrl}/api/orders/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(signedOrder),
+    });
 
-    return response;
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to submit order',
+      };
+    }
+
+    return {
+      success: true,
+      orderId: data.orderId,
+      transactionHash: data.transactionHash,
+      status: 'submitted',
+    };
   } catch (error: any) {
     console.error('❌ Error placing order:', error);
     return {
@@ -241,23 +307,36 @@ export async function placeOrder(
 }
 
 /**
- * Place order via backend proxy (recommended for production)
- * Backend handles signing with secure key storage
+ * Place order via backend (client signs with Privy, backend adds Builder headers)
+ * This is the recommended flow for gasless trading with attribution tracking
  * @param params - Order parameters
+ * @param signTypedData - Privy's signTypedData function
  * @param apiBaseUrl - Backend API base URL
  * @returns Order response
  */
 export async function placeOrderViaBackend(
   params: OrderParams,
+  signTypedData: (data: any) => Promise<string>,
   apiBaseUrl: string
 ): Promise<OrderResponse> {
   try {
-    const response = await fetch(`${apiBaseUrl}/api/orders`, {
+    console.log('🎯 Creating and signing order for backend submission:', params);
+
+    // Step 1: Create unsigned order
+    const order = createOrder(params);
+    console.log('📝 Order created:', order);
+
+    // Step 2: Sign with Privy wallet (EIP-712)
+    const signedOrder = await signOrderWithPrivy(order, signTypedData);
+    console.log('✍️ Order signed with Privy');
+
+    // Step 3: Send signed order to backend (adds Builder headers for attribution)
+    const response = await fetch(`${apiBaseUrl}/api/orders/submit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(params),
+      body: JSON.stringify(signedOrder),
     });
 
     const data = await response.json();
@@ -273,10 +352,10 @@ export async function placeOrderViaBackend(
       success: true,
       orderId: data.orderId,
       transactionHash: data.transactionHash,
-      status: data.status,
+      status: data.status || 'submitted',
     };
   } catch (error: any) {
-    console.error('Error placing order via backend:', error);
+    console.error('❌ Error placing order via backend:', error);
     return {
       success: false,
       error: error.message || 'Failed to place order',

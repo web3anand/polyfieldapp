@@ -21,7 +21,7 @@ import { polymarketWS, OrderLevel } from '../lib/polymarketWebSocket';
 import { usePrivy } from '@privy-io/expo';
 import { useEmbeddedEthereumWallet } from '@privy-io/expo';
 import { getUSDCBalance, hasEnoughUSDC } from '../services/etherscan';
-import { placeOrder, OrderParams } from '../services/polymarketTrading';
+import { placeOrderViaBackend, OrderParams } from '../services/polymarketTrading';
 import { useSupabase } from '../context/SupabaseContext';
 import { saveBet, updateBetStatus, savePosition, updatePosition, saveMarketToDB } from '../utils/supabase';
 
@@ -375,7 +375,7 @@ export default function BetScreen({ route, navigation }: BetScreenProps) {
         return;
       }
 
-      // Get embedded wallet provider for signing
+      // Get embedded wallet for signing
       const walletProvider = embeddedWallet.wallets[0];
       if (!walletProvider) {
         toast.error('Error', 'Wallet provider not available');
@@ -385,11 +385,41 @@ export default function BetScreen({ route, navigation }: BetScreenProps) {
 
       const provider = await walletProvider.getProvider();
       
-      // Get private key (this is secure in Privy's embedded wallet)
-      // Note: In production, you might want to handle this differently
-      // For now, we'll use the backend API approach
+      // Privy's signTypedData function for EIP-712 signatures
+      if (!provider.request) {
+        toast.error('Error', 'Wallet signing not available');
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      // Create signTypedData function for Privy
+      const signTypedData = async (typedData: any) => {
+        try {
+          const method = 'eth_signTypedData_v4';
+          // EIP-712 requires specific format with domain, types, primaryType, message
+          const typedDataString = JSON.stringify({
+            domain: typedData.domain,
+            types: {
+              EIP712Domain: [
+                { name: 'name', type: 'string' },
+                { name: 'version', type: 'string' },
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' },
+              ],
+              ...typedData.types,
+            },
+            primaryType: typedData.primaryType,
+            message: typedData.value,
+          });
+          const params = [wallet.address, typedDataString];
+          return await provider.request({ method, params }) as string;
+        } catch (error) {
+          console.error('Signing error:', error);
+          throw error;
+        }
+      };
       
-      toast.info('Placing Order...', 'Please wait');
+      toast.info('Placing Order...', 'Please sign the order');
 
       // Prepare order parameters
       const orderParams: OrderParams = {
@@ -400,20 +430,11 @@ export default function BetScreen({ route, navigation }: BetScreenProps) {
         userAddress: wallet.address,
       };
 
-      // Place order via backend (safer than client-side signing)
+      // Place order: client signs with Privy, backend adds Builder headers
       const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || '';
-      
-      const response = await fetch(`${API_BASE_URL}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderParams),
-      });
+      const result = await placeOrderViaBackend(orderParams, signTypedData, API_BASE_URL);
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to place order');
       }
 
@@ -428,14 +449,14 @@ export default function BetScreen({ route, navigation }: BetScreenProps) {
             price: effectivePrice,
             shares: parseFloat(shares),
             status: 'pending' as const,
-            transaction_hash: result.txHash || null,
+            transaction_hash: result.transactionHash || undefined,
           };
           
           const savedBet = await saveBet(betData);
           console.log('✅ Trade saved to database:', savedBet);
           
           // Update bet status when confirmed
-          if (result.txHash && savedBet?.id) {
+          if (result.transactionHash && savedBet?.id) {
             setTimeout(async () => {
               try {
                 await updateBetStatus(savedBet.id, 'filled');

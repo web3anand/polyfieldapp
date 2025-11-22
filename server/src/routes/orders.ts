@@ -14,55 +14,23 @@ const POLYMARKET_API_KEY = process.env.POLYMARKET_API_KEY || '';
 const POLYMARKET_SECRET = process.env.POLYMARKET_SECRET || '';
 const POLYMARKET_PASSPHRASE = process.env.POLYMARKET_PASSPHRASE || '';
 
-interface OrderParams {
-  tokenId: string;
-  side: 'BUY' | 'SELL';
-  size: string;
-  price: number;
-  userAddress: string;
-  feeRateBps?: number;
-  nonce?: number;
-  expiration?: number;
-}
+// Removed: OrderParams interface (no longer needed - using pre-signed orders from client)
 
 /**
- * POST /api/orders
- * Place a new order with server-side signing
+ * POST /api/orders/submit
+ * Submit a pre-signed order with Builder attribution headers
+ * Order is already signed by user's Privy wallet (EIP-712)
+ * Server adds Builder headers for attribution tracking only
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/submit', async (req: Request, res: Response) => {
   try {
-    const {
-      tokenId,
-      side,
-      size,
-      price,
-      userAddress,
-      feeRateBps = 0,
-      nonce = Date.now(),
-      expiration = Math.floor(Date.now() / 1000) + 86400,
-    }: OrderParams = req.body;
+    const signedOrder = req.body;
 
-    // Validate required fields
-    if (!tokenId || !side || !size || !price || !userAddress) {
+    // Validate that we have a signed order
+    if (!signedOrder || !signedOrder.signature) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields: tokenId, side, size, price, userAddress',
-      });
-    }
-
-    // Validate side
-    if (side !== 'BUY' && side !== 'SELL') {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid side. Must be BUY or SELL',
-      });
-    }
-
-    // Validate price range
-    if (price < 0 || price > 1) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid price. Must be between 0 and 1',
+        error: 'Missing signed order or signature',
       });
     }
 
@@ -75,51 +43,27 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    console.log('📝 Placing order:', { tokenId, side, size, price, userAddress });
+    console.log('📝 Submitting pre-signed order with Builder attribution');
 
-    // Create HMAC signature for Builder API auth
+    // Create HMAC signature for Builder API authentication
     const timestamp = Date.now().toString();
     const method = 'POST';
-    const path = '/orders';
-    
-    const orderPayload = {
-      salt: nonce.toString(),
-      maker: userAddress.toLowerCase(),
-      signer: userAddress.toLowerCase(),
-      taker: '0x0000000000000000000000000000000000000000',
-      tokenId,
-      makerAmount: side === 'BUY' 
-        ? Math.floor(parseFloat(size) * price * 1_000_000).toString()
-        : Math.floor(parseFloat(size) * 1_000_000).toString(),
-      takerAmount: side === 'BUY'
-        ? Math.floor(parseFloat(size) * 1_000_000).toString()
-        : Math.floor(parseFloat(size) * price * 1_000_000).toString(),
-      side: side === 'BUY' ? 0 : 1,
-      feeRateBps,
-      nonce,
-      expiration,
-    };
-
-    const body = JSON.stringify(orderPayload);
+    const path = '/order';
+    const body = JSON.stringify(signedOrder);
     const message = timestamp + method + path + body;
     
-    // Create HMAC signature
     const crypto = await import('crypto');
     const signature = crypto.createHmac('sha256', POLYMARKET_SECRET)
       .update(message)
       .digest('hex');
 
-    // Submit order to CLOB with Builder headers
+    // Submit order to CLOB with both user signature + Builder attribution
     const response = await axios.post(
-      `${CLOB_API_BASE}/orders`,
-      orderPayload,
+      `${CLOB_API_BASE}/order`,
+      signedOrder,
       {
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'application/json',
-          'Origin': 'https://polymarket.com',
-          'Referer': 'https://polymarket.com/',
           'POLY_BUILDER_API_KEY': POLYMARKET_API_KEY,
           'POLY_BUILDER_TIMESTAMP': timestamp,
           'POLY_BUILDER_PASSPHRASE': POLYMARKET_PASSPHRASE,
@@ -129,18 +73,31 @@ router.post('/', async (req: Request, res: Response) => {
       }
     );
 
+    console.log('✅ Order submitted successfully:', response.data);
+
     return res.status(200).json({
       success: true,
       orderId: response.data.orderID || response.data.id,
-      message: 'Order placed successfully',
-      data: response.data,
+      transactionHash: response.data.transactionHash,
+      status: response.data.status || 'submitted',
+      message: 'Order placed successfully with Builder attribution',
     });
 
   } catch (error: any) {
-    console.error('❌ Error placing order:', error);
+    console.error('❌ Error submitting order:', error);
+    
+    // Handle Axios errors with response data
+    if (error.response) {
+      return res.status(error.response.status || 500).json({
+        success: false,
+        error: error.response.data?.error || error.message,
+        details: error.response.data,
+      });
+    }
+
     return res.status(500).json({
       success: false,
-      error: error.message || 'Failed to place order',
+      error: error.message || 'Failed to submit order',
     });
   }
 });

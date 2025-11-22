@@ -1,4 +1,8 @@
 import { registerRootComponent } from 'expo';
+import { Buffer } from 'buffer';
+
+// Polyfill Buffer for React Native (required for crypto operations)
+global.Buffer = Buffer;
 
 import App from './App';
 

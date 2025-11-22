@@ -15,7 +15,7 @@ export default function CustomBottomTabBar({ state, descriptors, navigation }: B
     <View style={[
       styles.container,
       {
-        paddingBottom: Math.max(insets.bottom - 6, 6),
+        paddingBottom: Math.max(insets.bottom + 8, 16),
         backgroundColor: colors.tabBarBackground,
         borderTopWidth: 1,
         borderTopColor: colors.tabBarBorder,
