@@ -20,9 +20,10 @@ This happens because your deployed app URL (`https://polyfieldapp.vercel.app`) i
 3. **Add Allowed Origins**
    - Go to **Settings** → **Allowed Origins** (or **App Settings** → **Allowed Origins**)
    - Add the following origins:
-     - `https://polyfieldapp.vercel.app`
+     - `https://polyfieldapp.vercel.app` (production)
      - `https://*.vercel.app` (optional - allows all Vercel preview deployments)
-     - `http://localhost:5173` (for local development)
+     - `http://localhost:5173` (Vite default port)
+     - `http://localhost:3001` (current client port)
      - `http://localhost:3000` (if you use this port locally)
 
 4. **Save Changes**
